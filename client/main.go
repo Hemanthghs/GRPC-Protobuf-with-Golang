@@ -7,7 +7,7 @@ import (
 	"log"
 	"main/proto1"
 	"math/rand"
-	"time"
+	"sync"
 
 	"google.golang.org/grpc"
 )
@@ -24,6 +24,8 @@ func generateBPM() int32 {
 }
 
 func NormalAbnormalHeartBeat(c proto1.HeartBeatServiceClient) {
+	var wg sync.WaitGroup
+
 	stream, err := c.NormalAbnormalHeartBeat(context.Background())
 	handleError(err)
 	for t := 0; t < 10; t++ {
@@ -35,15 +37,20 @@ func NormalAbnormalHeartBeat(c proto1.HeartBeatServiceClient) {
 	}
 	stream.CloseSend()
 
-	for {
-		msg, err := stream.Recv()
-		if err == io.EOF {
-			break
+	wg.Add(1)
+	go func() {
+		for {
+			msg, err := stream.Recv()
+			if err == io.EOF {
+				wg.Done()
+				break
+			}
+			handleError(err)
+			// time.Sleep(1 * time.Second)
+			fmt.Printf("Received %v\n", msg)
 		}
-		handleError(err)
-		time.Sleep(1 * time.Second)
-		fmt.Printf("Received %v\n", msg)
-	}
+	}()
+	wg.Wait()
 
 }
 

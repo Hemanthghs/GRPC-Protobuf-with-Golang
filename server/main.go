@@ -57,6 +57,7 @@ func (*server) NormalAbnormalHeartBeat(stream proto1.HeartBeatService_NormalAbno
 		NAResponse := proto1.NormalAbnormalHeartBeatResponse{
 			Result: result,
 		}
+		fmt.Printf("Sending back response %v\n", result)
 		stream.Send(&NAResponse)
 
 	}
