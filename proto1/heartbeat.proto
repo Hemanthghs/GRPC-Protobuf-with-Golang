@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package proto1;
+option go_package = "/proto1";
+
+message HeartBeat {
+    int32 bpm = 1;
+    string username = 2;
+}
+
+message HeartBeatRequest {
+    HeartBeat heartbeat = 1;
+}
+
+message HeartBeatResponse {
+    string result = 1;
+}
+
+message LiveHeartBeatRequest {
+    HeartBeat heartbeat = 1;
+}
+
+message LiveHeartBeatResponse {
+    string result = 1;
+}
+
+service HeartBeatService {
+    rpc UserHeartBeat(HeartBeatRequest) returns (HeartBeatResponse) {};
+    rpc LiveHeartBeat(stream LiveHeartBeatRequest) returns (LiveHeartBeatResponse) {};
+}
