@@ -24,7 +24,25 @@ message LiveHeartBeatResponse {
     string result = 1;
 }
 
+message HeartBeatHistoryRequest {
+    string username = 1;
+}
+
+message HeartBeatHistoryResponse {
+    HeartBeat heartbeat = 1;
+}
+
+message NormalAbnormalHeartBeatRequest {
+    int32 bpm = 1;
+}
+
+message NormalAbnormalHeartBeatResponse {
+    string result = 1;
+}
+
 service HeartBeatService {
     rpc UserHeartBeat(HeartBeatRequest) returns (HeartBeatResponse) {};
     rpc LiveHeartBeat(stream LiveHeartBeatRequest) returns (LiveHeartBeatResponse) {};
+    rpc HeartBeatHistory(HeartBeatHistoryRequest) returns (stream HeartBeatHistoryResponse) {};
+    rpc NormalAbnormalHeartBeat(stream NormalAbnormalHeartBeatRequest) returns (stream NormalAbnormalHeartBeatResponse) {};
 }

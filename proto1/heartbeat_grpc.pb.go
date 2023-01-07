@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type HeartBeatServiceClient interface {
 	UserHeartBeat(ctx context.Context, in *HeartBeatRequest, opts ...grpc.CallOption) (*HeartBeatResponse, error)
 	LiveHeartBeat(ctx context.Context, opts ...grpc.CallOption) (HeartBeatService_LiveHeartBeatClient, error)
+	HeartBeatHistory(ctx context.Context, in *HeartBeatHistoryRequest, opts ...grpc.CallOption) (HeartBeatService_HeartBeatHistoryClient, error)
+	NormalAbnormalHeartBeat(ctx context.Context, opts ...grpc.CallOption) (HeartBeatService_NormalAbnormalHeartBeatClient, error)
 }
 
 type heartBeatServiceClient struct {
@@ -77,12 +79,77 @@ func (x *heartBeatServiceLiveHeartBeatClient) CloseAndRecv() (*LiveHeartBeatResp
 	return m, nil
 }
 
+func (c *heartBeatServiceClient) HeartBeatHistory(ctx context.Context, in *HeartBeatHistoryRequest, opts ...grpc.CallOption) (HeartBeatService_HeartBeatHistoryClient, error) {
+	stream, err := c.cc.NewStream(ctx, &HeartBeatService_ServiceDesc.Streams[1], "/proto1.HeartBeatService/HeartBeatHistory", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &heartBeatServiceHeartBeatHistoryClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type HeartBeatService_HeartBeatHistoryClient interface {
+	Recv() (*HeartBeatHistoryResponse, error)
+	grpc.ClientStream
+}
+
+type heartBeatServiceHeartBeatHistoryClient struct {
+	grpc.ClientStream
+}
+
+func (x *heartBeatServiceHeartBeatHistoryClient) Recv() (*HeartBeatHistoryResponse, error) {
+	m := new(HeartBeatHistoryResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *heartBeatServiceClient) NormalAbnormalHeartBeat(ctx context.Context, opts ...grpc.CallOption) (HeartBeatService_NormalAbnormalHeartBeatClient, error) {
+	stream, err := c.cc.NewStream(ctx, &HeartBeatService_ServiceDesc.Streams[2], "/proto1.HeartBeatService/NormalAbnormalHeartBeat", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &heartBeatServiceNormalAbnormalHeartBeatClient{stream}
+	return x, nil
+}
+
+type HeartBeatService_NormalAbnormalHeartBeatClient interface {
+	Send(*NormalAbnormalHeartBeatRequest) error
+	Recv() (*NormalAbnormalHeartBeatResponse, error)
+	grpc.ClientStream
+}
+
+type heartBeatServiceNormalAbnormalHeartBeatClient struct {
+	grpc.ClientStream
+}
+
+func (x *heartBeatServiceNormalAbnormalHeartBeatClient) Send(m *NormalAbnormalHeartBeatRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *heartBeatServiceNormalAbnormalHeartBeatClient) Recv() (*NormalAbnormalHeartBeatResponse, error) {
+	m := new(NormalAbnormalHeartBeatResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // HeartBeatServiceServer is the server API for HeartBeatService service.
 // All implementations must embed UnimplementedHeartBeatServiceServer
 // for forward compatibility
 type HeartBeatServiceServer interface {
 	UserHeartBeat(context.Context, *HeartBeatRequest) (*HeartBeatResponse, error)
 	LiveHeartBeat(HeartBeatService_LiveHeartBeatServer) error
+	HeartBeatHistory(*HeartBeatHistoryRequest, HeartBeatService_HeartBeatHistoryServer) error
+	NormalAbnormalHeartBeat(HeartBeatService_NormalAbnormalHeartBeatServer) error
 	mustEmbedUnimplementedHeartBeatServiceServer()
 }
 
@@ -95,6 +162,12 @@ func (UnimplementedHeartBeatServiceServer) UserHeartBeat(context.Context, *Heart
 }
 func (UnimplementedHeartBeatServiceServer) LiveHeartBeat(HeartBeatService_LiveHeartBeatServer) error {
 	return status.Errorf(codes.Unimplemented, "method LiveHeartBeat not implemented")
+}
+func (UnimplementedHeartBeatServiceServer) HeartBeatHistory(*HeartBeatHistoryRequest, HeartBeatService_HeartBeatHistoryServer) error {
+	return status.Errorf(codes.Unimplemented, "method HeartBeatHistory not implemented")
+}
+func (UnimplementedHeartBeatServiceServer) NormalAbnormalHeartBeat(HeartBeatService_NormalAbnormalHeartBeatServer) error {
+	return status.Errorf(codes.Unimplemented, "method NormalAbnormalHeartBeat not implemented")
 }
 func (UnimplementedHeartBeatServiceServer) mustEmbedUnimplementedHeartBeatServiceServer() {}
 
@@ -153,6 +226,53 @@ func (x *heartBeatServiceLiveHeartBeatServer) Recv() (*LiveHeartBeatRequest, err
 	return m, nil
 }
 
+func _HeartBeatService_HeartBeatHistory_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(HeartBeatHistoryRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(HeartBeatServiceServer).HeartBeatHistory(m, &heartBeatServiceHeartBeatHistoryServer{stream})
+}
+
+type HeartBeatService_HeartBeatHistoryServer interface {
+	Send(*HeartBeatHistoryResponse) error
+	grpc.ServerStream
+}
+
+type heartBeatServiceHeartBeatHistoryServer struct {
+	grpc.ServerStream
+}
+
+func (x *heartBeatServiceHeartBeatHistoryServer) Send(m *HeartBeatHistoryResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _HeartBeatService_NormalAbnormalHeartBeat_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(HeartBeatServiceServer).NormalAbnormalHeartBeat(&heartBeatServiceNormalAbnormalHeartBeatServer{stream})
+}
+
+type HeartBeatService_NormalAbnormalHeartBeatServer interface {
+	Send(*NormalAbnormalHeartBeatResponse) error
+	Recv() (*NormalAbnormalHeartBeatRequest, error)
+	grpc.ServerStream
+}
+
+type heartBeatServiceNormalAbnormalHeartBeatServer struct {
+	grpc.ServerStream
+}
+
+func (x *heartBeatServiceNormalAbnormalHeartBeatServer) Send(m *NormalAbnormalHeartBeatResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *heartBeatServiceNormalAbnormalHeartBeatServer) Recv() (*NormalAbnormalHeartBeatRequest, error) {
+	m := new(NormalAbnormalHeartBeatRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // HeartBeatService_ServiceDesc is the grpc.ServiceDesc for HeartBeatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -169,6 +289,17 @@ var HeartBeatService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "LiveHeartBeat",
 			Handler:       _HeartBeatService_LiveHeartBeat_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "HeartBeatHistory",
+			Handler:       _HeartBeatService_HeartBeatHistory_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "NormalAbnormalHeartBeat",
+			Handler:       _HeartBeatService_NormalAbnormalHeartBeat_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},

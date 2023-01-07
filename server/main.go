@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"main/proto1"
 	"net"
@@ -10,6 +11,7 @@ import (
 	"os/signal"
 
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -37,6 +39,74 @@ func pushUserToDb(ctx context.Context, item heart_item) primitive.ObjectID {
 	handleError(err)
 
 	return res.InsertedID.(primitive.ObjectID)
+}
+
+func (*server) NormalAbnormalHeartBeat(stream proto1.HeartBeatService_NormalAbnormalHeartBeatServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		bpm := req.GetBpm()
+		var result string
+		if bpm < 60 || bpm > 100 {
+			result = fmt.Sprintf("User HeartBeat of %v is Abnormal", bpm)
+		} else {
+			result = fmt.Sprintf("User HeartBeat of %v is Normal", bpm)
+		}
+		NAResponse := proto1.NormalAbnormalHeartBeatResponse{
+			Result: result,
+		}
+		stream.Send(&NAResponse)
+
+	}
+}
+
+func (*server) HeartBeatHistory(req *proto1.HeartBeatHistoryRequest, stream proto1.HeartBeatService_HeartBeatHistoryServer) error {
+	fmt.Println("HeartBeatHistory() called")
+	username := req.GetUsername()
+
+	filter := bson.M{
+		"username": username,
+	}
+
+	var result_data []heart_item
+	cursor, err := collection.Find(context.TODO(), filter)
+	handleError(err)
+
+	cursor.All(context.Background(), &result_data)
+	for _, v := range result_data {
+		historyResponse := proto1.HeartBeatHistoryResponse{
+			Heartbeat: &proto1.HeartBeat{
+				Bpm:      v.Bpm,
+				Username: v.Username,
+			},
+		}
+		stream.Send(&historyResponse)
+	}
+	return nil
+}
+
+func (*server) LiveHeartBeat(stream proto1.HeartBeatService_LiveHeartBeatServer) error {
+	result := ""
+	for {
+
+		msg, err := stream.Recv()
+		fmt.Println(msg)
+		if err == io.EOF {
+			return stream.SendAndClose(&proto1.LiveHeartBeatResponse{
+				Result: result,
+			})
+		}
+		handleError(err)
+		bpm := msg.GetHeartbeat().GetBpm()
+
+		docid := pushUserToDb(context.TODO(), heart_item{
+			Bpm:      msg.GetHeartbeat().GetBpm(),
+			Username: msg.GetHeartbeat().GetUsername(),
+		})
+		result += fmt.Sprintf("User HeartBeat = %v, docid = %v ------  ", bpm, docid)
+	}
 }
 
 func (*server) UserHeartBeat(ctx context.Context, req *proto1.HeartBeatRequest) (*proto1.HeartBeatResponse, error) {

@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"main/proto1"
 	"math/rand"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -21,6 +23,47 @@ func generateBPM() int32 {
 	return int32(bpm)
 }
 
+func NormalAbnormalHeartBeat(c proto1.HeartBeatServiceClient) {
+	stream, err := c.NormalAbnormalHeartBeat(context.Background())
+	handleError(err)
+	for t := 0; t < 10; t++ {
+		newNARequst := &proto1.NormalAbnormalHeartBeatRequest{
+			Bpm: generateBPM(),
+		}
+		stream.Send(newNARequst)
+		fmt.Printf("Sent %v\n", newNARequst)
+	}
+	stream.CloseSend()
+
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		handleError(err)
+		time.Sleep(1 * time.Second)
+		fmt.Printf("Received %v\n", msg)
+	}
+
+}
+
+func HeartBeatHistory(c proto1.HeartBeatServiceClient) {
+	newHistoryRequest := proto1.HeartBeatHistoryRequest{
+		Username: "hemanthghs",
+	}
+	res_stream, err := c.HeartBeatHistory(context.Background(), &newHistoryRequest)
+	handleError(err)
+	for {
+		msg, err := res_stream.Recv()
+		handleError(err)
+		if err == io.EOF {
+			break
+		}
+		fmt.Println(msg)
+		// time.Sleep(1 * time.Second)
+	}
+}
+
 func LiveHeartBeat(c proto1.HeartBeatServiceClient) {
 	stream, err := c.LiveHeartBeat(context.Background())
 	handleError(err)
@@ -31,12 +74,13 @@ func LiveHeartBeat(c proto1.HeartBeatServiceClient) {
 				Username: "hemanthghs",
 			},
 		}
+		fmt.Println("Resuest send ", newRequest)
 		stream.Send(newRequest)
 	}
 
-	resp, err := stream.CloseAndRecv()
-	handleError(err)
-	fmt.Println(resp)
+	stream.CloseAndRecv()
+	// handleError(err)
+	// fmt.Println(resp)
 
 }
 
@@ -57,5 +101,8 @@ func main() {
 	defer conn.Close()
 
 	c := proto1.NewHeartBeatServiceClient(conn)
-	UserHeartBeat(c)
+	// UserHeartBeat(c)
+	// LiveHeartBeat(c)
+	// HeartBeatHistory(c)
+	NormalAbnormalHeartBeat(c)
 }
